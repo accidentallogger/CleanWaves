@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'AddEventScreen.dart';
 import 'ConfigColors.dart';
@@ -86,6 +87,7 @@ class EventDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Event Details")),
+      backgroundColor: appcolors.backgroColor,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(

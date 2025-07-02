@@ -73,6 +73,7 @@ class HomeContent extends StatelessWidget {
           ),
         ),
       ),
+      backgroundColor: appcolors.backgroColor,
       body: ListView(
         children: [
           SizedBox(
