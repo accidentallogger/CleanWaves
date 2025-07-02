@@ -28,13 +28,25 @@ class _AuthScreenState extends State<AuthScreen> {
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
+
+    debugPrint("Form data: $_formData");
+
     setState(() => _loading = true);
     String? error;
 
     if (_isSignup) {
       error = await _auth.signupUser(_formData);
     } else {
-      error = await _auth.loginUser(_formData["phone"], _formData["password"]);
+      final phone = _formData["phone"];
+      final password = _formData["password"];
+      if (phone.isEmpty || password.isEmpty) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Phone and password required")),
+        );
+        return;
+      }
+      error = await _auth.loginUser(phone, password);
     }
 
     setState(() => _loading = false);
@@ -44,7 +56,10 @@ class _AuthScreenState extends State<AuthScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Signup success! Please login.")),
         );
-        setState(() => _isSignup = false);
+        setState(() {
+          _isSignup = false;
+          _formData.updateAll((key, value) => value is bool ? false : "");
+        });
       } else {
         Navigator.pushReplacement(
           context,
@@ -80,7 +95,11 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isSignup ? "Sign Up" : "Sign In")),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.grey[900],
+        title: Text(_isSignup ? "Sign Up" : "Sign In"),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -107,16 +126,28 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: _loading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
                 child: _loading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : Text(_isSignup ? "Sign Up" : "Sign In"),
               ),
               TextButton(
-                onPressed: () => setState(() => _isSignup = !_isSignup),
+                onPressed: () {
+                  setState(() {
+                    _isSignup = !_isSignup;
+                    _formData.updateAll(
+                      (key, value) => value is bool ? false : "",
+                    );
+                  });
+                },
                 child: Text(
                   _isSignup
                       ? "Already have an account? Sign In"
                       : "No account? Sign Up",
+                  style: const TextStyle(color: Colors.blueAccent),
                 ),
               ),
             ],

@@ -14,7 +14,8 @@ class AuthService {
 
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
-      final token = data['token'];
+      final token = data['response']?['data']?['auth_token'];
+
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', token);
