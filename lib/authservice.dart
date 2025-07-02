@@ -17,8 +17,10 @@ class AuthService {
       final token = data['response']?['data']?['auth_token'];
 
       if (token != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('jwt_token', token);
+        await (await SharedPreferences.getInstance()).setString(
+          'jwt_token',
+          token,
+        );
         return null;
       }
       return "Token missing in response.";

@@ -1,8 +1,11 @@
 import 'package:beach_saver_test/ConfigColors.dart';
 import 'package:flutter/material.dart';
-
+import 'authservice.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LearningHub extends StatelessWidget {
   const LearningHub({super.key});
@@ -63,7 +66,10 @@ class LearningHub extends StatelessWidget {
                   );
                 }),
                 _minimalButton("Modules", () {
-                  // Navigate to modules screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ModuleSection()),
+                  );
                 }),
               ],
             ),
@@ -227,6 +233,72 @@ class QuizSection extends StatelessWidget {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+class ModuleSection extends StatelessWidget {
+  const ModuleSection({super.key});
+
+  Future<List<Map<String, dynamic>>> getlearningmodules() async {
+    final url = "http://10.0.2.2:3000/api/v1/eduhub/learning-modules";
+    String? token = await (await SharedPreferences.getInstance()).getString(
+      'jwt_token',
+    );
+    var res = await http.get(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json', 'auth_token': token!},
+    );
+    if (res.statusCode == 200) {
+      final body = json.decode(res.body);
+      final List<dynamic> data = body['response']['data'];
+      return data.map((e) => e as Map<String, dynamic>).toList();
+    }
+    throw Exception('Failed to load modules');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: appcolors.appBarColor,
+        title: const Text("Learning Modules"),
+      ),
+      backgroundColor: appcolors.backgroColor,
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: getlearningmodules(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          if (!snapshot.hasData ||
+              snapshot.data == null ||
+              snapshot.data!.isEmpty) {
+            return const Center(child: Text('No modules found.'));
+          }
+
+          final modules = snapshot.data!;
+          return ListView.builder(
+            itemCount: modules.length,
+            itemBuilder: (context, item) {
+              final module = modules[item];
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: ListTile(
+                  title: Text(module['title'] ?? 'No Title'),
+                  subtitle: Text(module['content'] ?? 'No Content'),
+                  trailing: Text("${module['points'] ?? 0} pts"),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
