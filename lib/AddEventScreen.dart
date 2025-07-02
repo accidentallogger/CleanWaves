@@ -12,6 +12,8 @@ class AddEventScreen extends StatefulWidget {
 }
 
 class _AddEventScreenState extends State<AddEventScreen> {
+  double _circleRadius = 100;
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
@@ -51,39 +53,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
     setState(() {
       _currentLocation = LatLng(position.latitude, position.longitude);
     });
-  }
-
-  void _handleMapTap(LatLng latLng) {
-    if (_polygonPoints.isNotEmpty) {
-      final first = _polygonPoints.first;
-      final dist = Distance().as(LengthUnit.Meter, first, latLng);
-      if (dist < 10 && _polygonPoints.length > 2) {
-        // Close polygon
-        _polygonPoints.add(first);
-        setState(() {});
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Area closed.")));
-        return;
-      }
-    }
-
-    setState(() {
-      _polygonPoints.add(latLng);
-    });
-  }
-
-  void _clearPolygon() {
-    setState(() {
-      _polygonPoints.clear();
-    });
-  }
-
-  void _openFullMap() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => FullMapScreen(points: _polygonPoints)),
-    );
   }
 
   @override
@@ -152,6 +121,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
               ),
             ),
             const SizedBox(height: 10),
+
             Stack(
               children: [
                 Container(
@@ -165,7 +135,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       initialCenter:
                           _currentLocation ?? LatLng(19.1048, 72.8247),
                       initialZoom: 14,
-                      onTap: (tapPos, latLng) => _handleMapTap(latLng),
+                      onTap: (tapPos, latLng) {
+                        setState(() {
+                          _currentLocation = latLng;
+                        });
+                      },
                     ),
                     children: [
                       TileLayer(
@@ -173,36 +147,33 @@ class _AddEventScreenState extends State<AddEventScreen> {
                             'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                         subdomains: const ['a', 'b', 'c'],
                       ),
-                      if (_polygonPoints.isNotEmpty)
-                        PolygonLayer(
-                          polygons: [
-                            Polygon(
-                              points: _polygonPoints,
-                              color: const Color.fromARGB(
-                                255,
-                                98,
-                                7,
-                                7,
-                              ).withOpacity(0.3),
+                      if (_currentLocation != null)
+                        CircleLayer(
+                          circles: [
+                            CircleMarker(
+                              point: _currentLocation!,
+                              color: Colors.blue.withOpacity(0.7),
                               borderColor: Colors.blueAccent,
-                              borderStrokeWidth: 3,
+                              borderStrokeWidth: 2,
+                              radius: _circleRadius,
+                              useRadiusInMeter: true,
                             ),
                           ],
                         ),
-                      MarkerLayer(
-                        markers: [
-                          if (_currentLocation != null)
+                      if (_currentLocation != null)
+                        MarkerLayer(
+                          markers: [
                             Marker(
                               point: _currentLocation!,
                               width: 40,
                               child: const Icon(
-                                Icons.my_location,
-                                color: Colors.green,
+                                Icons.location_on,
+                                color: Colors.blue,
                                 size: 40,
                               ),
                             ),
-                        ],
-                      ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -213,20 +184,13 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     children: [
                       FloatingActionButton(
                         mini: true,
-                        heroTag: "map_tools",
-                        backgroundColor: Colors.blueAccent,
-                        onPressed: _openFullMap,
-                        child: const Icon(
-                          Icons.fullscreen,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      FloatingActionButton(
-                        mini: true,
-                        heroTag: "clear_polygon",
+                        heroTag: "clear_circle",
                         backgroundColor: Colors.redAccent,
-                        onPressed: _clearPolygon,
+                        onPressed: () {
+                          setState(() {
+                            _currentLocation = null;
+                          });
+                        },
                         child: const Icon(Icons.clear, color: Colors.white),
                       ),
                     ],
@@ -234,6 +198,37 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            if (_currentLocation != null)
+              Column(
+                children: [
+                  const Text(
+                    "Adjust Radius (meters)",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  Slider(
+                    value: _circleRadius,
+                    min: 50,
+                    max: 1000,
+                    divisions: 19,
+                    label: _circleRadius.toStringAsFixed(0),
+                    onChanged: (value) {
+                      setState(() {
+                        _circleRadius = value;
+                      });
+                    },
+                  ),
+                  Text(
+                    "Lat: ${_currentLocation!.latitude.toStringAsFixed(6)}, "
+                    "Lng: ${_currentLocation!.longitude.toStringAsFixed(6)}",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    "Radius: ${_circleRadius.toStringAsFixed(0)} meters",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
             const SizedBox(height: 10),
             ElevatedButton(
               style: ElevatedButton.styleFrom(

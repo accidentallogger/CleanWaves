@@ -137,8 +137,11 @@ class EventDetailScreen extends StatelessWidget {
                   pointColorMapper: (ChartData d, _) => d.color,
                   xValueMapper: (ChartData d, _) => d.x,
                   yValueMapper: (ChartData d, _) => d.y,
+                  dataLabelMapper: (ChartData d, _) => d.x,
+                  dataLabelSettings: DataLabelSettings(isVisible: true),
                 ),
               ],
+              legend: Legend(isVisible: true),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
